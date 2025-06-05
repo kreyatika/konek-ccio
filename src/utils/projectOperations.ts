@@ -1,14 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/auth';
 
 /**
  * Utility function to delete a project and all its related records
  * Uses multiple approaches to ensure deletion succeeds
- * @param projectId The ID of the project to delete
- * @param userId The ID of the user performing the deletion (needed for policy check)
  */
-export const deleteProject = async (projectId: string, userId?: string): Promise<boolean> => {
+export const deleteProject = async (projectId: string): Promise<boolean> => {
   try {
     console.log('Starting enhanced project deletion for:', projectId);
     
@@ -30,39 +27,6 @@ export const deleteProject = async (projectId: string, userId?: string): Promise
     }
     
     console.log(`Found project: ${projectData.title} (${projectData.id})`);
-    
-    // Check if the current user is a project member (required by policy)
-    // If not, add them temporarily to satisfy the policy
-    if (userId) {
-      console.log('Checking if user is a project member...');
-      const { data: memberData, error: memberCheckError } = await supabase
-        .from('project_members')
-        .select('id')
-        .eq('project_id', projectId)
-        .eq('user_id', userId)
-        .single();
-      
-      if (memberCheckError || !memberData) {
-        console.log('User is not a project member, adding temporarily...');
-        // Add the user as a project member temporarily
-        const { error: addMemberError } = await supabase
-          .from('project_members')
-          .insert({
-            project_id: projectId,
-            user_id: userId,
-            role: 'admin' // Give admin role to ensure deletion permissions
-          });
-        
-        if (addMemberError) {
-          console.warn('Could not add user as project member:', addMemberError.message);
-          // Continue anyway, our other approaches might still work
-        } else {
-          console.log('Successfully added user as project member');
-        }
-      } else {
-        console.log('User is already a project member');
-      }
-    }
     
     // Step 1: Delete all related records in order with forced RLS bypass
     const tables = [

@@ -14,17 +14,39 @@ const Admin = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Function to fetch all users
+  // Function to fetch all users with their committees
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch all users
+      const { data: usersData, error: usersError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      setUsers(data || []);
+      if (usersError) throw usersError;
+      
+      // Fetch all committees
+      const { data: committeesData, error: committeesError } = await supabase
+        .from('user_committees')
+        .select('*');
+      
+      if (committeesError) throw committeesError;
+      
+      // Map committees to users
+      const usersWithCommittees = usersData?.map(user => {
+        const userCommittees = committeesData
+          ?.filter(c => c.user_id === user.id)
+          ?.map(c => c.committee) || [];
+        
+        return {
+          ...user,
+          committees: userCommittees
+        };
+      }) || [];
+      
+      setUsers(usersWithCommittees);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
@@ -136,6 +158,7 @@ const Admin = () => {
         onRoleChange={handleRoleChange}
         onCommitteeAdd={handleCommitteeAdd}
         onCommitteeRemove={handleCommitteeRemove}
+        onUserAdded={fetchUsers}
       />
       
       <Card className="p-6">
