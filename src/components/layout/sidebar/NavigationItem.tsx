@@ -1,9 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { itemVariants } from "./animations";
 
 interface NavigationItemProps {
   name: string;
@@ -23,9 +21,7 @@ const NavigationItem = ({ name, href, icon, isActive, isCollapsed }: NavigationI
       )}
     >
       {icon}
-      <motion.li variants={itemVariants}>
-        {!isCollapsed && <p className="ml-2 text-sm">{name}</p>}
-      </motion.li>
+      {!isCollapsed && <p className="ml-2 text-sm">{name}</p>}
     </Link>
   );
 };
