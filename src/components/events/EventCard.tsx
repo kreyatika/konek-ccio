@@ -1,8 +1,14 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, ImageIcon, Users } from 'lucide-react';
+import { CheckCircle, XCircle, ImageIcon, Users, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { differenceInDays } from 'date-fns';
 import { Event } from '@/types';
 import { cn } from '@/lib/utils';
@@ -16,6 +22,8 @@ interface EventCardProps {
   hasRsvpd?: boolean;
   onRsvp?: (eventId: string) => void;
   onCancelRsvp?: (eventId: string) => void;
+  onEdit?: (eventId: string) => void;
+  onDelete?: (eventId: string) => void;
 }
 
 const EventCard: React.FC<EventCardProps> = ({ 
@@ -23,7 +31,9 @@ const EventCard: React.FC<EventCardProps> = ({
   isPast = false,
   hasRsvpd = false,
   onRsvp,
-  onCancelRsvp
+  onCancelRsvp,
+  onEdit,
+  onDelete
 }) => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -74,24 +84,59 @@ const EventCard: React.FC<EventCardProps> = ({
       onClick={handleCardClick}
     >
       {/* Event Image */}
-      <div className="aspect-video w-full overflow-hidden">
+      <div className="aspect-video w-full overflow-hidden relative group">
         {event.imageUrl ? (
           <img 
             src={event.imageUrl} 
             alt={event.title}
-            className="w-full h-full object-cover transition-transform hover:scale-105"
+            className="w-full h-full object-cover transition-transform group-hover:scale-105"
           />
         ) : (
           <div className="w-full h-full bg-muted flex items-center justify-center">
             <ImageIcon className="h-12 w-12 text-muted-foreground" />
           </div>
         )}
+        <div className="absolute top-2 right-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-8 w-8 bg-black/50 hover:bg-black/70 backdrop-blur-sm"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreVertical className="h-4 w-4 text-white" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onEdit) onEdit(event.id);
+                }}
+              >
+                Edit Event
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onDelete) onDelete(event.id);
+                }}
+              >
+                Delete Event
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>{event.title}</CardTitle>
-          {getEventStatusBadge()}
+          <div className="flex items-center gap-2">
+            <CardTitle>{event.title}</CardTitle>
+            {getEventStatusBadge()}
+          </div>
         </div>
         <CardDescription>{event.description}</CardDescription>
       </CardHeader>

@@ -4,7 +4,7 @@ import { Event } from '@/types';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/auth';
 import { fetchEvents } from './events/eventQueries';
-import { addEventToSupabase, rsvpToEvent, cancelRsvp } from './events/eventMutations';
+import { addEventToSupabase, rsvpToEvent, cancelRsvp, editEventInSupabase, deleteEventFromSupabase } from './events/eventMutations';
 
 export function useEvents() {
   const queryClient = useQueryClient();
@@ -13,6 +13,32 @@ export function useEvents() {
   const { data: events, isLoading, error } = useQuery({
     queryKey: ['events'],
     queryFn: fetchEvents,
+  });
+
+  const editEventMutation = useMutation({
+    mutationFn: ({ eventId, event, image }: { 
+      eventId: string,
+      event: Partial<Omit<Event, 'id' | 'createdAt' | 'updatedAt' | 'comments' | 'attachments'>>, 
+      image?: File 
+    }) => editEventInSupabase(eventId, event, image),
+    onSuccess: () => {
+      toast.success('Event updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+    onError: (error) => {
+      toast.error('Failed to update event: ' + error.message);
+    },
+  });
+
+  const deleteEventMutation = useMutation({
+    mutationFn: (eventId: string) => deleteEventFromSupabase(eventId),
+    onSuccess: () => {
+      toast.success('Event deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+    onError: (error) => {
+      toast.error('Failed to delete event: ' + error.message);
+    },
   });
 
   const addEventMutation = useMutation({
@@ -87,6 +113,18 @@ export function useEvents() {
     return event ? event.attendees.some(attendee => attendee.id === user.id) : false;
   };
 
+  const editEvent = (
+    eventId: string,
+    event: Partial<Omit<Event, 'id' | 'createdAt' | 'updatedAt' | 'comments' | 'attachments'>>, 
+    eventImage?: File
+  ) => {
+    editEventMutation.mutate({ eventId, event, image: eventImage });
+  };
+
+  const deleteEvent = (eventId: string) => {
+    deleteEventMutation.mutate(eventId);
+  };
+
   return {
     events,
     upcomingEvents,
@@ -97,6 +135,8 @@ export function useEvents() {
     rsvpToEvent: rsvpToEventFn,
     cancelRsvp: cancelRsvpFn,
     hasUserRsvpd,
+    editEvent,
+    deleteEvent,
   };
 }
 

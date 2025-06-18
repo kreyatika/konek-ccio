@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Event } from '@/types';
 import PageTransition from '@/components/ui/page-transition';
 import { useEvents } from '@/hooks/useEvents';
 import EventCard from '@/components/events/EventCard';
@@ -7,8 +8,10 @@ import EventsHeader from '@/components/events/EventsHeader';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import EditEventModal from '@/components/events/EditEventModal';
 
 const Events = () => {
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const {
     upcomingEvents,
     pastEvents,
@@ -17,7 +20,9 @@ const Events = () => {
     addEvent,
     rsvpToEvent,
     cancelRsvp,
-    hasUserRsvpd
+    hasUserRsvpd,
+    editEvent,
+    deleteEvent
   } = useEvents();
   
   if (isLoading) {
@@ -39,6 +44,7 @@ const Events = () => {
             </div>
           </div>
         </div>
+
       </PageTransition>
     );
   }
@@ -80,6 +86,8 @@ const Events = () => {
                     hasRsvpd={hasUserRsvpd(event.id)}
                     onRsvp={rsvpToEvent}
                     onCancelRsvp={cancelRsvp}
+                    onEdit={() => setEditingEvent(event)}
+                    onDelete={deleteEvent}
                   />
                 ))}
               </div>
@@ -97,6 +105,8 @@ const Events = () => {
                     key={event.id} 
                     event={event} 
                     isPast={true}
+                    onEdit={() => setEditingEvent(event)}
+                    onDelete={deleteEvent}
                   />
                 ))}
               </div>
@@ -108,6 +118,13 @@ const Events = () => {
           </div>
         </div>
       </div>
+
+      <EditEventModal
+        event={editingEvent}
+        isOpen={!!editingEvent}
+        onClose={() => setEditingEvent(null)}
+        onSave={editEvent}
+      />
     </PageTransition>
   );
 };

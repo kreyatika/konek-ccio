@@ -98,3 +98,79 @@ export async function cancelRsvp(eventId: string, userId: string) {
   return true;
 }
 
+export async function editEventInSupabase(
+  eventId: string,
+  event: Partial<Omit<Event, 'id' | 'createdAt' | 'updatedAt' | 'comments' | 'attachments'>>,
+  eventImage?: File
+) {
+  let imageUrl = event.imageUrl;
+
+  if (eventImage) {
+    imageUrl = await uploadEventImage(eventImage);
+  }
+
+  const { data, error } = await supabase
+    .from('events')
+    .update({
+      title: event.title,
+      description: event.description,
+      committee: event.committee || null,
+      start_date: event.startDate?.toISOString(),
+      end_date: event.endDate?.toISOString(),
+      location: event.location,
+      rsvp_deadline: event.rsvpDeadline ? event.rsvpDeadline.toISOString() : null,
+      image_url: imageUrl
+    })
+    .eq('id', eventId)
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('Error editing event:', error);
+    throw new Error(error.message);
+  }
+
+  return {
+    id: data.id,
+    title: data.title,
+    description: data.description,
+    committee: data.committee || undefined,
+    startDate: new Date(data.start_date),
+    endDate: new Date(data.end_date),
+    location: data.location,
+    imageUrl: data.image_url,
+    rsvpDeadline: data.rsvp_deadline ? new Date(data.rsvp_deadline) : undefined,
+    attendees: [],
+    comments: [],
+    attachments: [],
+    createdAt: new Date(data.created_at),
+    updatedAt: new Date(data.updated_at),
+  } as Event;
+}
+
+export async function deleteEventFromSupabase(eventId: string) {
+  // First delete all attendees
+  const { error: attendeesError } = await supabase
+    .from('event_attendees')
+    .delete()
+    .eq('event_id', eventId);
+
+  if (attendeesError) {
+    console.error('Error deleting event attendees:', attendeesError);
+    throw new Error(attendeesError.message);
+  }
+
+  // Then delete the event
+  const { error } = await supabase
+    .from('events')
+    .delete()
+    .eq('id', eventId);
+
+  if (error) {
+    console.error('Error deleting event:', error);
+    throw new Error(error.message);
+  }
+
+  return true;
+}
+
